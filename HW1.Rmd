@@ -1,0 +1,169 @@
+---
+title: "Homework Assignment 1"
+author: "Ji Wei Mok"
+date: 'Assigned: Oct 24, 2020, Due Sun Nov 01, 2020 11:59PM'
+output:
+  #pdf_document: default
+  html_document: 
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Data frame basics
+## Reading my data
+
+```{r, cache=TRUE}
+nyc <- read.csv("nycflights.csv")
+
+# Quick exploration of the data
+str(nyc)
+summary(nyc)
+
+```
+
+## Cleaning my data
+
+```{r}
+# Deleting the column X
+nyc$X <- NULL
+
+# Factorize columns that need to be a factor
+nyc$origin <- as.factor(nyc$origin)
+nyc$tailnum <- as.factor(nyc$tailnum)
+nyc$month <- as.factor(nyc$month)
+nyc$dest <- as.factor(nyc$dest)
+nyc$carrier <- as.factor(nyc$carrier)
+nyc$flight <- as.factor(nyc$flight)
+
+# Re-check my data
+str(nyc)
+summary(nyc)
+```
+
+# Data Exploration
+```{r}
+# Number of airlines
+numairlines <- nlevels(nyc$carrier)
+numairlines
+
+# Number of flights with airline code OO
+
+numairlineOO <- nrow(nyc[nyc$carrier=="OO", ])
+numairlineOO
+
+# How long is the shortest flight out of NYC airport
+shortestflight <- min(nyc$air_time, na.rm = TRUE)
+
+# How many UA flights on Jan 12th 2013
+
+numUA <- nrow(nyc[nyc$carrier == "UA" & nyc$month == "1" & nyc$day == "13", ])
+numUA
+
+```
+## Arrival Delay
+```{r}
+# Average arrival delay for all airports and airlines combined in Jan 2013
+avgdelay <- mean(nyc$arr_delay[nyc$month == "1" & nyc$year=="2013"], na.rm = TRUE)
+avgdelay
+
+# Median arrival delay for all airports and all airlines combined in Jan 2013?
+mediandelay <- median(nyc$arr_delay[nyc$month == "1" & nyc$year=="2013"], na.rm = TRUE)
+mediandelay
+
+```
+The distribution of arrival delays is right skew since median is less than mean
+
+## Airline Performance
+```{r}
+# Average arrival delays by airlines
+avgarrdelayairline <- tapply(nyc$arr_delay, nyc$carrier, mean, na.rm=TRUE)
+avgarrdelayairline
+
+# Bar Plot of average arrival delays for all airlines
+barplot(avgarrdelayairline)
+
+```
+Airline with highest average arrival delay is `r names(avgarrdelayairline[avgarrdelayairline==max(avgarrdelayairline)])`
+Airline with smallest average arrival delay is `r names(avgarrdelayairline[avgarrdelayairline==min(avgarrdelayairline)])`
+Airline with negative average arrival delay is `r names(avgarrdelayairline[avgarrdelayairline<0])`
+
+## Air Gain
+```{r}
+# Average airgain
+nyc$airgain <- nyc$dep_delay - nyc$arr_delay
+
+# average airgain for different airlines
+avgairgainairlines <- tapply(nyc$airgain, nyc$carrier, mean, na.rm=TRUE)
+barplot(avgairgainairlines)
+```
+Airlines gain `r mean(nyc$airgain, na.rm=TRUE)` when in air
+Airline `r names(avgairgainairlines[avgairgainairlines==max(avgairgainairlines)])` does best job
+Airline `r names(avgairgainairlines[avgairgainairlines==min(avgairgainairlines)])` does worst job
+
+## Reading new data
+```{r, cache=TRUE}
+planes <- read.csv("planes.csv")
+
+# Quick exploration of the data
+str(planes)
+summary(planes)
+```
+## Cleaning new data
+
+```{r}
+# Deleting the column X
+planes$X <- NULL
+
+# Factorize columns that need to be a factor
+planes$type <- as.factor(planes$type)
+planes$tailnum <- as.factor(planes$tailnum)
+planes$manufacturer <- as.factor(planes$manufacturer)
+planes$model <- as.factor(planes$model)
+planes$engine <- as.factor(planes$engine)
+planes$seats <- as.factor(planes$seats)
+
+# Re-check my data
+str(planes)
+summary(planes)
+
+```
+
+## Merging Data Frames
+
+```{r, cache=TRUE}
+joined <- merge(nyc,planes,by.x="tailnum",by.y="tailnum",all.x = TRUE, all.y=TRUE)
+# Re-check my data
+str(joined)
+summary(joined)
+
+```
+## Questions
+
+```{r}
+#What are top 10 manufacturers of planes that fly out of NYC airports?
+topmanufacturers <- names(head(sort(table(joined$manufacturer),decreasing=TRUE),n=10))
+topmanufacturers
+
+#Average arrival delays by manufacturers?
+avgarrdelaymanufacturer <- tapply(joined$arr_delay,joined$manufacturer, mean, na.rm=TRUE)
+avgarrdelaymanufacturer
+
+#What is the most popular seat configuration of UA planes flying out of NYC?
+UAdata <- joined[joined$carrier=="UA", ]
+topseat <- names(head(sort(table(UAdata$seats),decreasing=TRUE),n=1))
+topseat
+
+#What is the average age of the planes in year 2020?
+avgage <- 2020-mean(planes$year,na.rm=TRUE)
+avgage
+
+#Which aircraft has flown the most?
+freq <- table(joined$tailnum)
+maxFreq <- which.max(freq)
+names(maxFreq)
+
+```
